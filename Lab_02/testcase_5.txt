@@ -1,0 +1,15 @@
+{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | artist | Bon Jovi
+{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi'}} | 2548 | tracks | Wanted Dead or Alive
+{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi', 'tracks': ['Let It Rock']}} | 2548 | tracks | You Give Love a Bad Name
+{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi'}} | 2548 | albumTitle |''
+{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | artist | Bon Jovi
+{} | 2548 | artist | Bon Jovi
+{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | tracks | Wanted Dead or Alive
+{'2548': {'albumTitle': 'Slippery When Wet', 'tracks': ['Let It Rock']}} | 2548 | tracks | ''
+{'2548': {}} | 2548 | tracks | Let It Rock
+{'2548': {}} | 2548 | albumTitle | Slippery When Wet
+{'2548': {'albumTitle': 'Slippery When Wet'}} | -1 | artist | Bon Jovi
+{'2548': {'albumTitle': 'Slippery When Wet'}} | -1 | artist | ''
+{'2548': {'albumTitle': 'Slippery When Wet'}} | 0 | artist | Bon Jovi
+{InvalidString} | 2548 | artist | Bon Jovi
+{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | unknownProperty | Some Value

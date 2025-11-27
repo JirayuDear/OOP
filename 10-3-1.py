@@ -1,0 +1,2190 @@
+from fasthtml.common import *
+from fasthtml import *
+from fastapi import Request
+import datetime
+from datetime import timedelta
+
+class System:
+    def __init__(self):
+        self.__user_list = []
+        self.__member_list = []
+        self.__admin_list = []
+        self.__court_list = []
+        self.__courtbooking_list = []
+        self.__table_tennis_equipment = []
+        self.__tennis_equipment = []
+        self.__football_equipment = []
+        self.__gift_list = []
+        self.__coupon_list = []
+        self.__equipment_rental = []
+        self.__equipment_list = []
+        self.__history = []
+        
+    @property
+    def get_member_list(self):
+        return self.__member_list
+    @property
+    def get_court_list(self):
+        return self.__court_list
+    @property
+    def get_coupon_list(self):
+        return self.__coupon_list
+    @property
+    def get_gift_list(self):
+        return self.__gift_list
+    @property
+    def get_equipment_list(self):
+        return self.__equipment_list
+    @property
+    def get_equipment_rental(self):
+        return self.__equipment_rental
+    
+    def add_member_list(self, member):
+        if isinstance(member, Member):
+            self.__member_list.append(member)
+            return "Success"
+        return "Error: "
+    
+    def add_court_booking_list(self, courtbooking):
+        if isinstance(courtbooking, CourtBooking):
+            self.__courtbooking_list.append(courtbooking)
+            return "Success"
+        return "Error: "
+    
+    def add_court_list(self, court):
+        if isinstance(court, Court):
+            self.__court_list.append(court)
+            return "Success"
+        return "Error: "
+    
+    def add_history(self, history):
+        if isinstance(history, History):
+            self.__history.append(history)
+            return "Success"
+        return "Error: "
+    
+    def add_user_list(self, user): 
+        return self.__user_list.append(user)
+    
+    def add_gift_list(self, redeem):
+        return self.__gift_list.append(redeem)
+    
+    def add_equipment_rental(self, equipment_rental):
+        return self.__equipment_rental.append(equipment_rental)
+    
+    @property
+    def _list_list(self):
+        return self.__member_list
+    
+    def get_unaccept_reserve(self):
+        list_info = []
+        for courtbooking_instance in self.__courtbooking_list:
+            if courtbooking_instance.booking_status == False:
+                list_info.append([courtbooking_instance.booker.get_user.name, courtbooking_instance.court.court_name, courtbooking_instance.date_of_booking,
+                                  courtbooking_instance.time, courtbooking_instance.receipt, courtbooking_instance.booking_status, courtbooking_instance.total_price])
+        return list_info 
+    
+    
+    def add_booking_history(self, name, history, point):
+        for member_instance in self.__member_list:
+            if member_instance.get_name == name:
+                self.add_history(history)
+                result1 = member_instance.add_booking_history(history)
+                if result1 == "Success":
+                    result2 = member_instance.add_point(point)
+                    if result2 != "Success":
+                        return result2
+                else:
+                    return result1
+                return "Add point and history success"
+
+    def find_courtbooking_to_accept(self, name, court_name, date, time):
+        booking = None
+        for courtbooking_instance in self.__courtbooking_list:
+            if(courtbooking_instance.booker.get_user.name == name and courtbooking_instance.court.court_name == court_name and 
+               courtbooking_instance.date_of_booking == date and courtbooking_instance.time == time):
+                result = courtbooking_instance.change_status
+                if result == "Success":
+                    booking = courtbooking_instance
+                    break
+                else:
+                    return result
+        if booking == None:
+            return "Error: Booking not found"
+        history = History(booking, booking.receipt)
+        error = self.add_booking_history(name, history, booking.court.point)
+        return error if error != "Add point and history success" else "Accept reserve complete!!"
+    
+    def find_courtbooking_to_cancel(self, name, court_name, date, time):
+        for courtbooking_instance in self.__courtbooking_list:
+            if(courtbooking_instance.booker.get_user.name == name and courtbooking_instance.court.court_name == court_name and 
+               courtbooking_instance.date_of_booking == date and courtbooking_instance.time == time):
+                self.__courtbooking_list.remove(courtbooking_instance)
+                return "Remove Success!"
+        return "Error: cannot found this booking"
+    
+    def avaliable_date_time(self, sport_type):
+        from datetime import date, timedelta, datetime
+        from collections import defaultdict
+
+        time_range = ["10:00-11:00", "11:00-12:00", "12:00-13:00",
+                      "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00",
+                      "17:00-18:00", "18:00-19:00", "19:00-20:00", "20:00-21:00"]
+
+        available_date_time = defaultdict(list)
+        not_available_court = set()
+        court_list = self.search_court_by_sport(sport_type)
+
+        if not court_list:
+            return "Error: No courts available for this sport!"
+
+        current_time = datetime.now()
+
+        for courtbooking_instance in self.__courtbooking_list:
+            if courtbooking_instance.court in court_list:
+                days_diff = date.fromisoformat(courtbooking_instance.date_of_booking) - date.today()
+                if timedelta(days=0) <= days_diff <= timedelta(days=30):
+                    not_available_court.add((courtbooking_instance.court.court_name, courtbooking_instance.date_of_booking, courtbooking_instance.time))
+
+        for court_instance in court_list:
+            for i in range(31):
+                booking_date = (date.today() + timedelta(days=i)).isoformat()
+                booked_times = {time for court, date_, time in not_available_court
+                                if court == court_instance.court_name and date_ == booking_date}
+                for times in time_range:
+                    start_time_str, end_time_str = times.split("-")
+                    start_time = datetime.strptime(booking_date + " " + start_time_str, "%Y-%m-%d %H:%M")
+                    end_time = datetime.strptime(booking_date + " " + end_time_str, "%Y-%m-%d %H:%M")
+
+                    if start_time > current_time and times not in booked_times:
+                        available_date_time[court_instance.court_name].append((booking_date, times))
+
+        return dict(available_date_time)
+        
+    def booking_confirmation(self, court_name):
+        return court_name
+    def request_create_booking(self, court_name, date, time, receipt, account_id):
+        member = self.search_member_by_account_id(account_id)
+        court = self.search_court_by_court_name(court_name)
+        court_booking = CourtBooking
+        court_booking_temp = court_booking.create_booking(court, date, time, receipt, member)
+        self.add_court_booking_list(court_booking)
+        return self.booking_confirmation(court_name)
+    
+    def booking_form_data(self, court_name, date, time, total_price, coupon_id=None):
+        if coupon_id != None:
+            return [court_name, date, time, total_price, coupon_id]
+        if coupon_id == None:
+            return [court_name, date, time, total_price]
+        
+    def request_booking_form(self, court_name, date, time, member_id, coupon_id = None): #
+        court = self.search_court_by_court_name(court_name)
+        price = court.get_court_price
+        member = self.search_member_by_account_id(member_id)
+        payment = Payment
+        if coupon_id != None:
+            coupon = self.search_coupon_by_coupon_id(coupon_id)
+            coupon_discount = coupon.get_coupon_discount
+            total_price = payment.calculate_price_with_coupon(price, coupon_discount)
+            form = self.booking_form_data(court_name, date, time, total_price, coupon_id)
+            return form
+        else:
+            total_price = payment.calculate_price(price)
+            form = self.booking_form_data(court_name, date, time, total_price)
+            return form
+        
+    def create_booking(self, court, date, time, member, receipt=0 ):
+        court_booking = CourtBooking(court, date, time, receipt, member)
+        self.add_court_booking_list(court_booking)
+        return court_booking
+    
+    def add_equipment_by_sport(self, equipment):
+        if equipment.get_item_type == "ปิงปอง":
+            self.__table_tennis_equipment.append(equipment)
+            self.__equipment_list.append(equipment)  # เพิ่มอุปกรณ์ใน __equipment_list
+            print("เพิ่มอุปกรณ์ปิงปองเรียบร้อย")
+        elif equipment.get_item_type == "เทนนิส":
+            self.__tennis_equipment.append(equipment)
+            self.__equipment_list.append(equipment)  # เพิ่มอุปกรณ์ใน __equipment_list
+            print("เพิ่มอุปกรณ์เทนนิสเรียบร้อย")
+        elif equipment.get_item_type == "ฟุตบอล":
+            self.__football_equipment.append(equipment)
+            self.__equipment_list.append(equipment)  # เพิ่มอุปกรณ์ใน __equipment_list
+            print("เพิ่มอุปกรณ์ฟุตบอลเรียบร้อย")
+        else:
+            return "ไม่มีกีฬาที่ใช้อุปกรณ์นี้"
+        
+    def get_equipment_by_sport(self, sport):
+        if sport == "ปิงปอง":
+            return self.__table_tennis_equipment
+        elif sport == "เทนนิส":
+            return self.__tennis_equipment
+        elif sport == "ฟุตบอล":
+            return self.__football_equipment
+        else:
+            return None
+        
+    def calculate_total_equipment_price(self, equipment_ids):
+        total = 0
+        for item_id in equipment_ids:
+            equipment = self.search_equipment_by_id(item_id)
+            if equipment:
+                total += equipment.get_item_price
+        return total
+    
+    def search_equipment_by_id(self, item_id):
+        all_equipment = self.__table_tennis_equipment + self.__tennis_equipment + self.__football_equipment
+        for equipment in all_equipment:
+            if equipment.get_item_id == item_id:
+                return equipment
+        return None  # ถ้าไม่พบอุปกรณ์
+        
+    def search_member_by_username(self, username):
+        for member in self.get_member_list:
+            if member.get_username == username:
+                return member
+    def search_member_by_account_id(self, account_id): ##########################
+        for member in self.get_member_list:
+            if member.get_account_id == account_id:
+                return member
+    def search_court_by_sport(self, sport_type):
+        return [court for court in self.__court_list if court.get_court_sport_type == sport_type] or []
+    
+    def search_court_by_court_name(self, court_name):
+        for court in self.get_court_list:
+            if court.get_court_name == court_name:
+                return court
+        return "Not Found"
+    def search_court_by_court_id(self, court_id):
+        for court in self.get_court_list:
+            if court.get_court_id == court_id:
+                return court
+        return "Not Found"
+    def search_coupon_by_coupon_id(self, coupon_id): 
+        for coupon in self.get_coupon_list:
+            if coupon_id == coupon.get_coupon_id:   
+                return coupon
+        return "Not Found"
+    def search_coupon_by_coupon_code(self, coupon_code):
+        for coupon in self.get_coupon_list:
+            if coupon_code == coupon.get_coupon_code:   
+                return coupon
+        return "Not Found"
+    def search_equipment_by_id(self, item_id):
+        for equipment in self.get_equipment_list:
+            if equipment.get_item_id == item_id:
+                return equipment
+            
+    def search_equipment_by_id_for_rent(self, item_id):#
+        all_equipment = self.__table_tennis_equipment + self.__tennis_equipment + self.__football_equipment
+        for equipment in all_equipment:
+            if equipment.get_item_id == item_id:
+                return equipment
+        return None  # ถ้าไม่พบอุปกรณ์
+    
+    def search_history_by_username(self, username):
+        history = []
+        for member in self.__member_list:
+            if member.get_username == username:
+                for booking in member.view_history:
+                    if booking.get_status_booking_success:
+                        history.append(booking)
+            
+    def get_info_for_create_table(self, sport_type, date):
+        already_accept = []
+        not_accept = []
+        court_list = self.search_court_by_sport(sport_type)
+        court_name = []
+        for c in court_list:
+            court_name.append(c.court_name)
+        for history in self.__history:
+            print(str(history))
+            for court in court_list:
+                print(history.get_date)
+                print(date)
+                print(history.get_court)
+                print(court)
+                if history.get_date == date and history.get_court == court:
+                    already_accept.append([history.get_court_name, history.get_time])
+        for booking in self.__courtbooking_list:
+            for court in court_list:
+                if booking.date_of_booking == date and booking.booking_status == False and booking.court == court:
+                    not_accept.append([booking.court.court_name, booking.time])
+        return court_name, already_accept, not_accept
+    
+    def add_coupon_list(self, coupon): #
+        return self.__coupon_list.append(coupon)
+    
+    def search_gift_by_name(self, gift_name):
+        for gift in self.__gift_list:
+            if gift.get_gift_name == gift_name:
+                return gift
+        return None
+
+system = System()
+
+class User:
+    def __init__(self, name, surname, citizen_id, phone, gender, birth_date):
+        self.__name = name
+        self.__surname = surname
+        self.__citizen_id = citizen_id
+        self.__phone = phone
+        self.__gender = gender
+        self.__birth_date = birth_date
+        #self.__account = []
+
+    # def add_account(self, account): #****************************
+    #     self.__list_account.append(account)
+    
+    @property
+    def name(self):
+        return self.__name
+    @property
+    def surname(self):
+        return self.__surname
+    @property
+    def birth_date(self):
+        return self.__birth_date
+    @property
+    def phone(self):
+        return self.__phone
+    @property
+    def gender(self):
+        return self.__gender
+    
+    def set_name(self, new_name):
+        if new_name == "" or new_name == None:
+            return self.__name
+        else:
+            self.__name = new_name
+            return self.__name
+        
+    def set_surname(self, new_surname):
+        if new_surname == "" or new_surname == None:
+            return self.__surname
+        else:
+            return self.__surname
+        
+    def set_birth_date(self, new_birth_date):
+        self.__birth_date = new_birth_date
+        return self.__birth_date
+    
+    def set_gender(self, new_gender):
+        if new_gender == "ชาย" or new_gender == "หญิง":
+            self.__gender = new_gender
+            return self.__gender
+        else:
+            return self.__gender
+        
+    def set_phone(self, new_phone):
+        if len(new_phone) != 10 or new_phone[0] != "0" or new_phone == "" or new_phone == None:
+            return self.__phone
+        else:
+            self.__phone = new_phone
+            return self.__phone
+    
+
+    # def add_account(self, account):
+    #     if isinstance(account, Account):
+    #         self.__account.append(account)
+    #         return "Success"
+    #     return "Error: "
+    
+class Account:
+    __account_id_counter = '00001'
+    
+    @classmethod
+    def get_next_account_id(cls):
+        return cls.__account_id_counter
+    
+    @classmethod 
+    def increment_account_id(cls):
+        next_id = str(int(cls.__account_id_counter) + 1).zfill(5)  # แปลงเป็น int + 1 แล้วแปลงกลับเป็น 5 หลัก
+        cls.__account_id_counter = next_id
+        
+    # def __init__(self, account_id, username, password, gmail, owner: User):
+    #     self.__account_id = account_id
+    #     self.__username = username
+    #     self.__password = password
+    #     self.__gmail = gmail
+    #     self.__owner = owner
+    
+    def __init__(self, username, password, gmail, owner): ##########################
+        self.__account_id = Account.get_next_account_id()
+        self.__username = username
+        self.__password = password
+        self.__gmail = gmail
+        self.__owner = owner
+
+        Account.increment_account_id()
+
+    @property
+    def get_account_id(self):
+        return self.__account_id
+
+    @property
+    def get_user(self):
+        return self.__owner
+    
+    @property
+    def get_name(self):
+        return self.__owner.name
+    
+    @property
+    def get_surname(self):
+        return self.__owner.surname
+    
+    @property
+    def get_birthdate(self):
+        return self.__owner.birth_date
+    
+    @property
+    def get_gender(self):
+        return self.__owner.gender
+    
+    @property
+    def get_phone(self):
+        return self.__owner.phone
+    
+    @property
+    def get_username(self):
+        return self.__username
+    
+    @property
+    def get_gmail(self):
+        return self.__gmail
+    
+    def set_name(self, new_name):
+        return self.__owner.set_name(new_name)
+    
+    def set_surname(self, new_surname):
+        return self.__owner.set_surname(new_surname)
+    
+    def set_birth_date(self, new_birth_date):
+        return self.__owner.set_birth_date(new_birth_date)
+    
+    def set_gender(self, new_gender):
+        return self.__owner.set_gender(new_gender)
+    
+    def set_gmail(self, new_gmail):
+        if new_gmail == "" or new_gmail == None:
+            return self.__gmail
+        else:
+            self.__gmail = new_gmail
+            return self.__gmail
+        
+    def set_phone(self, new_phone):
+        return self.__owner.set_phone(new_phone)
+
+class Admin(Account):
+    def __init__(self, username, password, gmail, owner, system):
+        super().__init__(username, password, gmail, owner)
+        self.__system = system
+
+    def notification():
+        pass
+    def accept_reserve():
+        pass
+    def accept_cancel():
+        pass
+    def  book_court():
+        pass
+    def membership_management():
+        pass
+    def equipment_rental():
+        pass
+    def point_exchange():
+        pass
+
+class Member(Account):
+    # def __init__(self, account_id, username, password, gmail, owner: User, points = 0, dmis_coins = 0):
+    #     super().__init__(account_id, username, password, gmail, owner)
+    #     self.__point = points
+    #     self.__dmis_coins = dmis_coins
+    #     self.__coupon_list = []
+    #     self.__history = []
+    def __init__(self, username, password, gmail, owner, points = 0, dimis_coins = 0): ############################
+        super().__init__(username, password, gmail, owner)
+        self.__history = []
+        self.__point = points
+        self.__dmis_coins = dimis_coins
+        self.__member_coupon_list = []
+        
+    @property
+    def get_account_id(self):
+        return super().get_account_id
+    
+    @property
+    def view_history(self):
+        return self.__history
+    
+    @property
+    def get_point(self):
+        return self.__point
+    # Setter สำหรับกำหนดค่าคะแนนโดยตรง
+    def set_point(self, new_point):
+        self.__point = new_point
+    #setter ของ point
+    def update_point(self, point_added):
+        self.__point = self.__point + point_added
+        return self.__point
+    def deduct_point(self, item_point):
+        self.__point = self.__point - item_point
+        return self.__point
+    
+    @property
+    def get_member_coupon_list(self):
+        return self.__member_coupon_list
+    
+    def add_member_coupon_list(self, coupon):
+        return self.__member_coupon_list.append(coupon)
+
+    @property
+    def get_dmis_coin(self):
+        return self.__dmis_coins
+    # Setter สำหรับกำหนดค่าเหรียญโดยตรง
+    def set_dmis_coin(self, new_dmis_coins):
+        self.__dmis_coins = new_dmis_coins
+    #setter ของ dmis_coins
+    def update_dmis_coin(self, dmis_coins_added):
+        self.__dmis_coins = self.__dmis_coins + dmis_coins_added
+        return self.__dmis_coins
+    def deduct_dmis_coin(self, item_dmis_coins):
+        self.__dmis_coins = self.__dmis_coins - item_dmis_coins
+        return self.__dmis_coins
+    
+    def add_booking_history(self, history: "History"):
+        if isinstance(history, History):
+            self.__history.append(history)
+            return "Success"
+        return "Error: history must be instance of History"
+    
+    def add_point(self, point):
+        if isinstance(point, int):
+            self.__point += point
+            return "Success"
+        return "Error: point must be instance of Integer"
+    
+    @property
+    def get_coupon_list(self):
+        return self.__member_coupon_list
+    
+    def check_item_point(self, item_point):
+        if self.__point >= item_point:
+            self.deduct_point(item_point)
+            return True
+        return False
+    
+
+class History:
+    def __init__(self, finish_booking: "CourtBooking", payment_type):
+        self.__finish_booking = finish_booking
+        self.__payment_type = payment_type
+
+    def __str__(self):
+        return f"{self.__finish_booking.booker.get_name()}-{self.__finish_booking.court.court_name}-{self.__finish_booking.date_of_booking}-{self.__finish_booking.time}-{self.__finish_booking.receipt}"
+
+    @property
+    def get_date(self):
+        return self.__finish_booking.date_of_booking
+    
+    @property
+    def get_court_name(self):
+        return self.__finish_booking.court.court_name
+    
+    @property
+    def get_time(self):
+        return self.__finish_booking.time
+    
+    @property
+    def get_court(self):
+        return self.__finish_booking.court
+    
+    @property
+    def get_court_sport_type(self):
+        return self.__finish_booking.get_court_sport_type
+
+class Court:
+    def __init__(self, court_name, court_id, court_sport_type, status,  price, point):
+        self.__court_name = court_name
+        self.__court_id = court_id
+        self.__court_sport_type = court_sport_type
+        self.__price = price
+        self.__point = point 
+        self.__status = status
+
+    @property
+    def get_court_id(self):
+        return self.__court_id
+    
+    @property
+    def court_name(self):
+        return self.__court_name
+    
+    @property
+    def get_court_price(self):
+        return self.__price
+    
+    @property
+    def point(self):
+        return self.__point
+    
+    @property
+    def get_court_sport_type(self):
+        return self.__court_sport_type
+
+
+class CourtBooking:
+    __court_booking_id_counter = '000001'
+    @classmethod
+    def get_next_booking_id(cls):
+        return cls.__court_booking_id_counter
+
+    @classmethod
+    def increment_booking_id(cls):
+        next_id = str(int(cls.__court_booking_id_counter)+1).zfill(5)
+        cls.__court_booking_id_counter = next_id
+        
+    def __init__(self, booking_id, court: Court, date_of_booking, time, booker : Member, receipt, total_price, status = False):
+        self.__booking_id = CourtBooking.get_next_booking_id()
+        self.__court = court
+        self.__date_of_booking = date_of_booking
+        self.__booker = booker
+        self.__receipt = receipt
+        self.__status = status
+        self.__time = time
+        self.__total_price = total_price
+        
+        CourtBooking.increment_booking_id()
+    
+    @property
+    def total_price(self):
+        return self.__total_price
+    
+    @property
+    def booking_status(self):
+        return self.__status
+    
+    @property
+    def booker(self):
+        return self.__booker
+    
+    @property
+    def court(self):
+        return self.__court
+    
+    @property
+    def receipt(self):
+        return self.__receipt
+    
+    @property
+    def date_of_booking(self):
+        return self.__date_of_booking
+    
+    @property
+    def time(self):
+        return self.__time
+    
+    @property
+    def change_status(self):
+        if(self.__status == False):
+            self.__status = True
+            return "Success"
+        return "Error: This booking is already acccept!"
+    
+    def get_court_booking_id(self):
+        return self.__booking_id
+    
+    @property
+    def get_court_sport_type(self):
+        return self.__court.get_court_sport_type
+
+class Redeem:
+    def __init__(self, name, point, amount, image_url):
+        self.__name = name
+        self.__point = point
+        self.__amount = amount
+        self.__image_url = image_url
+
+    @property
+    def get_gift_name(self):
+        return self.__name
+    @property
+    def get_gift_point(self):
+        return self.__point
+    @property
+    def get_gift_amount(self):
+        return self.__amount
+    @property
+    def get_gift_url(self):
+        return self.__image_url
+    def deduct_amount(self, deleted_amount=1):
+        self.__amount = self.__amount - deleted_amount
+        return self.__amount
+    
+class Coupon:
+    __coupon_id_counter = '000001'
+    @classmethod
+    def get_next_coupon_id(cls):
+        return cls.__coupon_id_counter  
+
+    @classmethod
+    def increment_coupon_id(cls):
+        next_id = str(int(cls.__coupon_id_counter) + 1).zfill(5)  # แปลงเป็น int + 1 แล้วแปลงกลับเป็น 5 หลัก
+        cls.__coupon_id_counter = next_id 
+
+    def __init__(self, coupon_code, coupon_discount, expire_date):
+        self.__coupon_id = Coupon.get_next_coupon_id()
+        self.__coupon_code = coupon_code
+        self.__coupon_discount = coupon_discount
+        self.__expire_date = expire_date
+
+        Coupon.increment_coupon_id()
+
+    @property
+    def get_coupon_id(self):
+        return self.__coupon_id
+    @property
+    def get_coupon_discount(self):
+        return self.__coupon_discount
+    @property
+    def get_coupon_code(self):
+        return self.__coupon_code
+    @property
+    def  get_expire_date(self):
+        return self.__expire_date
+    
+class Payment:
+    def __init__(self, price):
+        self.__payment_id = CourtBooking.get_next_booking_id()
+        self.__total_price = price
+
+    @staticmethod
+    def calculate_price(court_price):
+        return court_price
+    @staticmethod
+    def calculate_price_with_coupon(court_price, coupon_discount):
+        discount = court_price * coupon_discount/100
+        total_price = court_price - discount
+        return total_price
+
+class Equipment:
+    def __init__(self, item_id, name, price, type, status, image_url):
+        self.__item_id = item_id
+        self.__name = name
+        self.__price = price
+        self.__type = type
+        self.__image_url = image_url
+        self.__status = status
+
+    @property
+    def get_item_name(self):
+        return self.__name
+    @property
+    def get_item_id(self):
+        return self.__item_id
+    @property
+    def get_item_price(self):
+        return self.__price
+    @property
+    def get_item_type(self):
+        return self.__type
+    @property
+    def get_image_url(self):
+        return self.__image_url
+    @property
+    def get_item_status(self):
+        return self.__status
+    def change_status(self, new_status):
+        self.__status = new_status
+        return self.__status
+
+class EquipmentRental:
+    def __init__(self, equipment_list, date, time, renter):
+        self.__equipment_list = equipment_list
+        self.__date = date
+        self.__time = time
+        self.__renter = renter
+
+    @property
+    def get_renter(self):
+        return self.__renter
+        
+    def equip_availble():
+        pass
+    
+################################################################################################
+
+tennisA = Court('สนามเทนนิสหญ้าแท้',       101, "เทนนิส", True,     180, 50)
+tennisB = Court('สนามเทนนิสผิวตอนกรีต',  102, "เทนนิส", True,     180, 50)
+tennisC = Court('สนามเทนนิสมะตอย',     103,   "เทนนิส", True,   180, 50)
+tennisD = Court('สนามเทนนิสหญ้าเทียม',   104, "เทนนิส", True,     180, 50)
+
+footballA = Court('สนามฟุตบอลหญ้าแท้',   201, "ฟุตบอล", True,     750 , 300)
+footballB = Court('สนามฟุตบอลหญ้าเทียม',   202, "ฟุตบอล", True,     500, 200)
+
+pA = Court('ปิงปองโต๊ะ 1',   301, "ปิงปอง", True,     100, 30)
+pB = Court('ปิงปองโต๊ะ 2',   302, "ปิงปอง", True,     100, 30)
+pC = Court('ปิงปองโต๊ะ 3',   303, "ปิงปอง", True,     100, 30)
+pD = Court('ปิงปองโต๊ะ 4',   304, "ปิงปอง", True,     100, 30)
+
+
+user_mock_1 = User('Jirayu', 'Phumsiri', '00000001', '0863521179', "ชาย", '2006-07-23')
+system.add_user_list(user_mock_1)
+
+user_mock_2 = User("John", "Doe", "12345678", "0812345678", "ชาย", "2000-01-01")
+system.add_user_list(user_mock_2)
+
+user_mock_3 = User("Jane", "Doe", "98765432", "0898765432", "หญิง", "1999-05-05")
+system.add_user_list(user_mock_3)
+
+userA = User("Sigma", "Lovely", "133264646464696", "0843486344", "ชาย", "2000-08-09")
+system.add_user_list(userA)
+
+userB = User("Cat", "San", "8888888888888", "0845444444", "หญิง", "2000-05-19")
+system.add_user_list(userB)
+
+
+system.add_member_list(Member('Dear', '12345', 'jirayuphumsiri@gmail.com', user_mock_1))
+system.add_member_list(Member("john_doe", "password123", "john@gmail.com", user_mock_2))
+system.add_member_list(Member("jane_doe", "password456", "jane@gmail.com", user_mock_3))
+memberA = Member("SigmaO_o", "1234", "fgdfgdaf@kiklsd.com", userA)
+memberB = Member("Catt", "5555", "GG@kiklsd.com", userB)
+system.add_member_list(memberA)
+system.add_member_list(memberB)
+
+# memberA = Member("123456789", "SigmaO_o", "1234", "fgdfgdaf@kiklsd.com", userA)
+# memberB = Member("999999999", "Catt", "5555", "GG@kiklsd.com", userB)
+
+# userA.add_account(memberA)
+# userB.add_account(memberB)
+
+
+system.add_coupon_list(Coupon('AAAA',5,datetime.datetime.now()+timedelta(days=10)))
+system.add_coupon_list(Coupon('BBBB',10,datetime.datetime.now()+timedelta(days=7)))
+system.add_coupon_list(Coupon('CCCC',15,datetime.datetime.now()+timedelta(days=5)))
+system.add_coupon_list(Coupon('DDDD',20,datetime.datetime.now()+timedelta(days=3)))
+
+
+#เพิ่มของแลก
+system.add_gift_list(Redeem('น้ำดื่ม', 100, 150, 'https://www.evian.com/fileadmin/user_upload/gb/Products/Core_Range/Core_Range_-_EVIAN-500ML-BOTTLE.png'))
+system.add_gift_list(Redeem('ผ้าเย็น', 200, 150,'https://bangpleestationery.com/wp-content/uploads/2019/11/6088002.png'))
+system.add_gift_list(Redeem('แก้วเก็บความเย็น', 500, 150,'https://image.makewebcdn.com/makeweb/m_1920x0/YuMQ0nq3x/Products/Grey.jpg'))
+system.add_gift_list(Redeem('เวย์โปรตีน', 1000, 150,'https://medias.watsons.co.th/publishing/WTCTH-BP_268327-front-zoom.jpg'))
+
+
+jirayu = system.search_member_by_account_id('00001')
+jirayu.add_member_coupon_list(system.search_coupon_by_coupon_code('AAAA'))
+jirayu.add_member_coupon_list(system.search_coupon_by_coupon_code('AAAA'))
+jirayu.add_member_coupon_list(system.search_coupon_by_coupon_code('BBBB'))
+jirayu.add_member_coupon_list(system.search_coupon_by_coupon_code('CCCC'))
+jirayu.add_member_coupon_list(system.search_coupon_by_coupon_code('DDDD'))
+
+
+bookingA = CourtBooking("12345", pA, "2025-03-11", "10:00-11:00", memberA, "receipt", 20)
+bookingB = CourtBooking("55555", tennisC, "2025-03-06", "15:00-16:00", memberB, "receipt", 30) 
+bookingD = CourtBooking("55575", tennisA, "2025-03-06", "15:00-16:00", memberB, "receipt", 40) 
+bookingE = CourtBooking("95555", tennisB, "2025-03-06", "15:00-16:00", memberB, "receipt", 50) 
+bookingC = CourtBooking("66666", footballB, "2025-04-15", "16:00-17:00", memberA, "receipt", 60)
+
+system.add_court_booking_list(bookingA)
+system.add_court_booking_list(bookingB)
+system.add_court_booking_list(bookingC)
+system.add_court_booking_list(bookingD)
+system.add_court_booking_list(bookingE)
+# system.add_member_list(memberA)
+# system.add_member_list(memberB)
+system.add_court_list(tennisA)
+system.add_court_list(tennisB)
+system.add_court_list(tennisC)
+system.add_court_list(tennisD)
+system.add_court_list(footballA)
+system.add_court_list(footballB)
+system.add_court_list(pA)
+system.add_court_list(pB)
+system.add_court_list(pC)
+system.add_court_list(pD)
+
+jirayu.add_booking_history(History(bookingA, "QRpayment"))
+jirayu.add_booking_history(History(bookingB, "DMIS Coin"))
+
+system.add_equipment_by_sport(Equipment('PP01','ไม้ปิงปอง(เดี่ยว)', 50, 'ปิงปอง', True, 'https://contents.mediadecathlon.com/p2542862/k$81ffcd7fb53f9142c70d9e5c72e6aaa8/%E0%B9%84%E0%B8%A1%E0%B9%89%E0%B8%9B%E0%B8%B4%E0%B8%87%E0%B8%9B%E0%B8%AD%E0%B8%87%E0%B8%AA%E0%B8%B3%E0%B8%AB%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B9%80%E0%B8%A5%E0%B9%88%E0%B8%99%E0%B9%83%E0%B8%99%E0%B8%AA%E0%B9%82%E0%B8%A1%E0%B8%AA%E0%B8%A3%E0%B8%A3%E0%B8%B8%E0%B9%88%E0%B8%99-%E0%B8%AA%E0%B8%B3%E0%B8%AB%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%80%E0%B8%A5%E0%B9%88%E0%B8%99%E0%B8%97%E0%B8%B8%E0%B8%81%E0%B8%AA%E0%B9%84%E0%B8%95%E0%B8%A5%E0%B9%8C-8546887.jpg'))
+system.add_equipment_by_sport(Equipment('PP02','ไม้ปิงปอง(คู่)', 100, 'ปิงปอง', True, 'https://contents.mediadecathlon.com/p1241056/k$c4e81c4254a7352cb84cd1e9b0dc0422/%E0%B8%8A%E0%B8%B8%E0%B8%94%E0%B8%95%E0%B8%B5%E0%B8%9B%E0%B8%B4%E0%B8%87%E0%B8%9B%E0%B8%AD%E0%B8%87%E0%B8%A3%E0%B8%B8%E0%B9%88%E0%B8%99-%E0%B8%AA%E0%B8%B3%E0%B8%AB%E0%B8%A3%E0%B8%B1%E0%B8%9A%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%80%E0%B8%A5%E0%B9%88%E0%B8%99%E0%B8%9A%E0%B8%99%E0%B9%82%E0%B8%95%E0%B9%8A%E0%B8%B0%E0%B8%82%E0%B8%99%E0%B8%B2%E0%B8%94%E0%B9%80%E0%B8%A5%E0%B9%87%E0%B8%81%E0%B9%83%E0%B8%99%E0%B8%A3%E0%B9%88%E0%B8%A1-%E0%B8%9E%E0%B8%A3%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B9%84%E0%B8%A1%E0%B9%89-%E0%B8%AD%E0%B8%B1%E0%B8%99%E0%B9%81%E0%B8%A5%E0%B8%B0%E0%B8%A5%E0%B8%B9%E0%B8%81-%E0%B8%A5%E0%B8%B9%E0%B8%81-8500829.jpg?f=1920x0&format=auto'))
+
+system.add_equipment_by_sport(Equipment('TB01','ไม้เทนนิส WILSON(เดี่ยว)', 50, 'เทนนิส', True, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTRfFQhPORZJ7XMsxsKQXwS7N1fv0km10bR_g&s'))
+system.add_equipment_by_sport(Equipment('TB02','ไม้เทนนิส WILSON(คู่)', 100, 'เทนนิส', True, 'https://raketka.ua/image/catalog/2024/08/04/Wilson%20Blade%20Pro%2098%2016x19%20V9%20WR150511%2014.jpg'))
+system.add_equipment_by_sport(Equipment('TB03','ลูกเทนนิส(เดี่ยว)', 30, 'เทนนิส', True, 'https://media.istockphoto.com/id/137345149/th/%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%96%E0%B9%88%E0%B8%B2%E0%B8%A2/%E0%B8%A5%E0%B8%B9%E0%B8%81%E0%B9%80%E0%B8%97%E0%B8%99%E0%B8%99%E0%B8%B4%E0%B8%AA.jpg?s=612x612&w=0&k=20&c=LPIiWTPRVcpu0L0AYOkj497cWeCJh0hNCDs-T4FCCYo='))
+system.add_equipment_by_sport(Equipment('TB04','ลูกเทนนิส(แพ็ค 3)', 90, 'เทนนิส', True, 'https://image.makewebcdn.com/makeweb/m_1920x0/QCaGJLM49/1/AAC60B5A_8CF3_47AC_8C65_8D265FE38E5F.jpeg'))
+
+system.add_equipment_by_sport(Equipment('FB01','ลูกฟุตบอล(ธรรมดา)', 60, 'ฟุตบอล', True, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcSJ-IbCSJAy9q-ZT3sd91dwVxtBZ7m9WAXw&s'))
+system.add_equipment_by_sport(Equipment('FB02','ลูกฟุตบอล Molten', 100, 'ฟุตบอล', True, 'https://ik.imagekit.io/onenow/seven/1682571481.16sov4Z7eMV0jX0exuov9s4zUMej2m7J.jpeg?tr=f-auto,pr-true,ar-1-1,w-1200,fo-auto'))
+
+
+################################################################################################
+
+app, rt = fast_app(
+    hdrs=(
+        Style(""" 
+                html {
+                    font-family: Arial, sans-serif;
+                    background-color: #E6D0FF;
+                }
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #E6D0FF;
+                    text-align: center;
+                }
+                bg {
+                    background-color: #E6D0FF;
+                }
+                /* Navbar */
+                .navbar {
+                    background-color: #A56EFF;
+                    width: 100vw; /* ให้ Navbar เต็มจอ */
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 15px 40px;
+                    color: white;
+                    font-size: 18px;
+                    z-index: 1000;
+                }
+
+                .navbar a {
+                    color: white;
+                    text-decoration: none;
+                    margin-left: 20px;
+                    font-weight: bold;
+                }
+
+                .navbar-links {
+                    display: flex;
+                }
+
+                .navbar dark {
+                    background-color: #886BAF;
+                    width: 100vw; /* ให้ Navbar เต็มจอ */
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 15px 40px;
+                    color: white;
+                    font-size: 18px;
+                    z-index: 1000;
+                }
+
+                /* Hero Section */
+                .hero {
+                    padding: 120px 20px 50px; /* ขยับลงมาเพราะ Navbar ใช้ position fixed */
+                }
+
+                .hero h1 {
+                    font-size: 50px;
+                    font-weight: bold;
+                    color: #6A31A5;
+                }
+
+                .hero p {
+                    font-size: 18px;
+                    color: #444;
+                    max-width: 600px;
+                    margin: auto;
+                }
+
+                .button {
+                    background-color: #A56EFF;
+                    color: white;
+                    border: none;
+                    padding: 15px 30px;
+                    margin-top: 20px;
+                    font-size: 18px;
+                    border-radius: 15px;
+                    cursor: pointer;
+                    margin-right: 10px; /* แก้ปุ่มติดกัน */
+                }
+                
+                .button-side {
+                    width: 100%;
+                    background-color: #FFFFFF;
+                    color: black;
+                    border: none;
+                    padding: 15px 30px;
+                    margin-top: 20px;
+                    font-size: 15px;
+                    font-weight: bold;
+                    border-radius: 15px;
+                    cursor: pointer;
+                    margin-right: 10px; /* แก้ปุ่มติดกัน */
+                }
+
+                .button:hover {
+                    background-color: #8949CC;
+                }
+
+                /* Footer */
+                .footer {
+                    width: 100vw;
+                    background-color: #c19cf3;
+                    text-align: center;
+                    padding: 15px 0;
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                }
+
+                .footer a {
+                    color: white;
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+                
+                .grid{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    gap: 20px; /* ระยะห่างระหว่างการ์ด */
+                    padding-top: 40px;
+                }
+                .water {
+                    width: 300px;
+                    height: 400px;
+                    border-radius: 20px;
+                    background-color: #ffffff;
+                }
+                .data {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-left: 10px;
+                    margin-right: 10px;
+                }
+                .points{
+                    background-color: #C5A3FF;
+                    padding: 10px 20px;
+                    border-radius: 20px;
+                    display: inline-block;
+                    text-align: center;
+                    margin-top: 100px;
+                }
+                .button_w {
+                    background-color: #FFFFFF;
+                    color: black;
+                    border: none;
+                    padding: 15px 30px;
+                    margin-top: 20px;
+                    font-size: 18px;
+                    border-radius: 15px;
+                    cursor: pointer;
+                    margin-right: 10px; /* แก้ปุ่มติดกัน */
+                }
+              
+                .button_p {
+                    background-color: #A56EFF;
+                    color: #ffffff;
+                    border: none;
+                    padding: 15px 30px;
+                    margin-top: 20px;
+                    font-size: 18px;
+                    border-radius: 15px;
+                    cursor: pointer;
+                    margin-right: 10px; /* แก้ปุ่มติดกัน */
+                }
+                
+                .input {
+                    border: 2px solid #a855f7;
+                    border-radius: 8px;
+                    padding: 8px;
+                    width: 100%;
+                }
+                
+                .side-button {
+                    color: #A56EFF;
+                    background-color: white;
+                    border: none;
+                    padding: 10px;
+                    border-radius: 20px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    width: 200px;
+                }
+                .coupon-card {
+                    background-color: #ffffff;
+                    border-radius: 15px;
+                    padding: 20px;
+                    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+                    margin: 10px;
+                    text-align: left;
+                }
+
+                .coupon-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 20px;
+                }
+        """),
+        )
+    )
+#################################          หน้าหลัก Guest        ###############################################
+# @rt("/Home")
+# async def home(request):
+#     account_id = request.session.get("account_id")  # ดึงค่า account_id จาก session
+#     if account_id is None:
+#         return Script("window.location.href = '/login';")  # ถ้าไม่มี account_id ให้กลับไปหน้า login
+
+#     return Html(f"""
+#         <h1>Welcome, your account ID is {account_id}</h1>
+#     """)
+
+@rt("/")  # main page
+def get():
+    return Container(
+        # Navbar
+        Div(
+            H1("DMIS COURT"),
+            Div(
+                A("อัตราราคา", href="/booking-rates"),
+                A("SIGN UP", href="/sign-up"),
+                A("LOG IN", href="/log-in"),
+                A("ADMIN", href="/log-in-admin"),
+                cls="navbar-links"
+            ),
+            cls="navbar"
+        ),
+
+        # Hero Section
+        Div(
+        H1("DMIS COURT", cls="hero h1"),
+        P("Hi, there. We are DMIS Court! Welcome to the best sport court booking service website of all time. :D"),
+        Form(
+            Button("BOOK NOW!", cls="button"),
+            method="get",
+            action="/home"
+        ),
+    
+        Form(
+            Button("COURT CHECKING", cls="button"),
+            method="get",
+            action="/court_checking"
+        ),
+
+        cls="hero"
+    ),
+
+
+        # Footer
+        Div(
+            A("contact us", href="/contact"),
+            cls="footer"
+        )
+    )
+
+@rt("/sign-up")
+def get():
+    pass
+
+@rt("/log-in")
+def get():
+    return "log in"
+
+
+@rt("/log-in-admin")
+def get():
+    return "admin"
+
+@rt("/contact")
+def get():
+    return "contact us" 
+
+@rt("/booking-rates") #รูป
+def get():
+    return Container(
+        Img(src="https://scontent.fbkk22-2.fna.fbcdn.net/v/t39.30808-6/482139884_1287852505643418_3237391886418985713_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=127cfc&_nc_ohc=2uKCDhbeAskQ7kNvgG_yjHF&_nc_oc=Adh79XOIB9mVl_I0AVM9Y1nZMFVjDIr7n-r_El1Q4B3nWGe2LfeUXLFKfmXh0OXdtIEUqmNeHF0vMISA4YVLkJ_5&_nc_zt=23&_nc_ht=scontent.fbkk22-2.fna&_nc_gid=A0VkDvTizanHsF4C3s82A6T&oh=00_AYGgPyjkNYlrxXfGx59TbOh4VsabdEiNK5yDECWavcjTvA&oe=67D3C180",
+            alt="Court Rates per Hour", style = "width: 500px; height:auto; item-align: center"),
+        A("X", href="/", style="color: #6A31A5; text-decoration: none; position: absolute; top: 10px; right: 10px;")
+    )
+
+@rt("/admin")
+def get():
+    return Container(
+        Div(
+            H1("DMIS COURT"),
+            H3("ADMIN"),
+            style="display: flex; justify-content: space-between; width: 100%;"
+        ),
+        Div(
+            Form(
+                Button("Accept Reserve", type="submit"),
+                method="get",
+                action="/accept_reserve"
+            ),
+            Form(
+                Button("Rent Equipment", type="submit"),
+                method="get",
+                action="/equipment-rental"
+            ),
+            Form(
+                Button("Accept Cancel", type="submit"),
+                method="get",
+                action="/accept_cancel"
+            ),
+            Form(
+                Button("Court Checking", type="submit"),
+                method="get",
+                action="/court_checking"
+            ),
+            Form(
+                Button("Booking", type="submit"),
+                method="get",
+                action="/booking"
+            ),
+            style="display: inline-block; white-space: nowrap;"
+        )
+    )
+
+
+@rt("/accept_reserve")
+def get_accept_reserve():
+    data = system.get_unaccept_reserve()
+    return Container(
+        Div(
+            H1("DMIS COURT"),
+            A("HOME", href="/admin"),
+            style="display: flex; justify-content: space-between; width: 100%;"
+        ),
+        Container(
+            H3("ยืนยันการจอง", style='text-align: center'),
+            Table(
+                Thead(
+                    Tr(
+                        Th("ชื่อผู้จอง"),
+                        Th("สนาม"),
+                        Th("วันที่"),
+                        Th("เวลา"),
+                        Th("ราคาสุทธิ"),
+                        Th("สลิป"),
+                        Th("ยืนยัน"),
+                        Th("ยกเลิก")
+                    )
+                ),
+                Tbody(
+                    *[
+                        Tr(
+                            Td(name),
+                            Td(court),
+                            Td(date),
+                            Td(time),
+                            Td(total_price),
+                            Td(Img(src="/path/to/image.jpg", alt="Slip Image", style="width: 100px; height: auto;")),
+                            Td(
+                            Form(
+                                Input(type="hidden", name="name", value=name),
+                                Input(type="hidden", name="court", value=court),
+                                Input(type="hidden", name="date", value=date),
+                                Input(type="hidden", name="time", value=time),
+                                Button("ยืนยัน", type="submit"),
+                                method="post",
+                                action="/confirm_booking")
+                            ),
+                            Td(
+                            Form(
+                                Input(type="hidden", name="name", value=name),
+                                Input(type="hidden", name="court", value=court),
+                                Input(type="hidden", name="date", value=date),
+                                Input(type="hidden", name="time", value=time),
+                                Button("ยกเลิก", type="submit"),
+                                method="post",
+                                action="/cancel_booking")
+                            )
+                        ) 
+                        for oneData in data 
+                        for name, court, date, time, slip, status, total_price in [oneData] 
+                    ]
+                )
+            ), 
+        ),  
+    ) if data else Container(
+        Div(
+            H1("DMIS COURT"),
+            A("HOME", href="/"),
+            style="display: flex; justify-content: space-between; width: 100%;"
+        ),
+        Container(
+            H3("ยืนยันการจอง", style='text-align: center'),
+            Div(
+                H2("ไม่มีรายการจองที่ยังไม่ได้รับการยืนยัน", style='text-align: center'),
+                style="background-color: e6f3ff; padding: 20px;"
+            ) 
+        ),  
+    )
+
+@rt("/confirm_booking", methods=["POST"])
+async def confirm_booking(request):
+    form_data = await request.form()
+    name = form_data.get("name")
+    court = form_data.get("court")
+    date = form_data.get("date")
+    time = form_data.get("time")
+
+    result = system.find_courtbooking_to_accept(name, court, date, time)
+
+    return Container(
+        H1("DMIS COURT"),
+        H3("ยืนยันสำเร็จ", style="color: green; text-align: center;"),
+        A("NEXT", href="/accept_reserve", style="display: block; text-align: center;")
+    ) if result == "Accept reserve complete!!" else Container(
+        H1("DMIS COURT"),
+        H3("ยืนยันไม่สำเร็จ", style="color: green; text-align: center;"),
+        H3(f"{result}", style="color: green; text-align: center;"),
+        A("NEXT", href="/accept_reserve", style="display: block; text-align: center;")
+    )
+
+@rt("/cancel_booking", methods=["POST"])
+async def confirm_booking(request): 
+    form_data = await request.form()
+    name = form_data.get("name")
+    court = form_data.get("court")
+    date = form_data.get("date")
+    time = form_data.get("time")
+
+    result = system.find_courtbooking_to_cancel(name, court, date, time)
+
+    return Container(
+        H1("DMIS COURT"),
+        H3("ยกเลิกสำเร็จ", style="color: green; text-align: center;"),
+        A("NEXT", href="/accept_reserve", style="display: block; text-align: center;")
+    ) if result == "Remove Success!" else Container(
+        H1("DMIS COURT"),
+        H3("ยกเลิกไม่สำเร็จ", style="color: green; text-align: center;"),
+        H3(f"{result}", style="color: green; text-align: center;"),
+        A("NEXT", href="/accept_reserve", style="display: block; text-align: center;")
+    )
+
+
+@rt("/booking_tennis_court")
+def get_available_selection_tennis(court: str = None, date: str = None, time: str = None):
+    bigdata = system.avaliable_date_time("เทนนิส")
+    if not bigdata:
+        return "No available courts"
+
+    content = []
+
+    if not court:
+        court_options = [Option(c, value=c) for c in bigdata.keys()]
+        content.append(Container(H1("ประเภทกีฬา: เทนนิส"),
+            Form(
+                Label("เลือกสนาม", 
+                    Select(id="court", name="court", 
+                         hx_get="/update_tennis", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals="js:{court: event.target.value}" , *court_options))
+        )))
+    elif not date:
+        available_dates = bigdata.get(court, [])
+        unique_dates = sorted(set([d for d, _ in available_dates]))
+        date_options = [Option(d, value=d) for d in unique_dates]
+        content.append(Form(
+            Label("เลือกวันที่", 
+                  Select(id="date", name="date", 
+                         hx_get="/update_tennis", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals=f"js:{{court: '{court}', date: event.target.value}}" , *date_options))
+        ))
+    elif not time:
+        available_dates = bigdata.get(court, [])
+        time_options = [Option(t, value=t) for d, t in available_dates if d == date]
+        content.append(Form(
+            Label("เลือกเวลา", 
+                  Select(id="time", name="time", 
+                         hx_get="/update_tennis", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals=f"js:{{court: '{court}', date: '{date}', time: event.target.value}}" , *time_options))
+        ))
+    else:
+        content.append(Container(Div(f"ท่านกำลังจะจอง: {court} | {date} | {time}"),
+                                 Form(
+                                     Button("ดำเนินการต่อไป", type="submit"),
+                                     method="get",
+                                     action="/"
+                                 )))
+    content.append(Div(id="preview"))
+    return Container(*content)
+
+@rt("/booking_football_court")
+def get_available_selection_football(court: str = None, date: str = None, time: str = None):
+    bigdata = system.avaliable_date_time("ฟุตบอล")
+    if not bigdata:
+        return "No available courts"
+
+    content = []
+
+    if not court:
+        court_options = [Option(c, value=c) for c in bigdata.keys()]
+        content.append(Container(H1("ประเภทกีฬา: ฟุตบอล"),
+            Form(
+                Label("เลือกสนาม", 
+                    Select(id="court", name="court", 
+                         hx_get="/update_football", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals="js:{court: event.target.value}" , *court_options))
+        )))
+    elif not date:
+        available_dates = bigdata.get(court, [])
+        unique_dates = sorted(set([d for d, _ in available_dates]))
+        date_options = [Option(d, value=d) for d in unique_dates]
+        content.append(Form(
+            Label("เลือกวันที่", 
+                  Select(id="date", name="date", 
+                         hx_get="/update_football", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals=f"js:{{court: '{court}', date: event.target.value}}" , *date_options))
+        ))
+    elif not time:
+        available_dates = bigdata.get(court, [])
+        time_options = [Option(t, value=t) for d, t in available_dates if d == date]
+        content.append(Form(
+            Label("เลือกเวลา", 
+                  Select(id="time", name="time", 
+                         hx_get="/update_football", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals=f"js:{{court: '{court}', date: '{date}', time: event.target.value}}" , *time_options))
+        ))
+    else:
+        content.append(Container(Div(f"ท่านกำลังจะจอง: {court} | {date} | {time}"),
+                                 Form(
+                                     Button("ดำเนินการต่อไป", type="submit"),
+                                     method="get",
+                                     action="/"
+                                 )))    
+    content.append(Div(id="preview"))
+    return Container(*content)
+
+@rt("/booking_table_tennis_court")
+def get_available_selection_table_tennis(court: str = None, date: str = None, time: str = None):
+    bigdata = system.avaliable_date_time("ปิงปอง")
+    if not bigdata:
+        return "No available courts"
+
+    content = []
+
+    if not court:
+        court_options = [Option(c, value=c) for c in bigdata.keys()]
+        content.append(Container(H1("ประเภทกีฬา: ปิงปอง"),
+            Form(
+                Label("เลือกสนาม", 
+                    Select(id="court", name="court", 
+                         hx_get="/update_table_tennis", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals="js:{court: event.target.value}" , *court_options))
+        )))
+    elif not date:
+        available_dates = bigdata.get(court, [])
+        unique_dates = sorted(set([d for d, _ in available_dates]))
+        date_options = [Option(d, value=d) for d in unique_dates]
+        content.append(Form(
+            Label("เลือกวันที่", 
+                  Select(id="date", name="date", 
+                         hx_get="/update_table_tennis", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals=f"js:{{court: '{court}', date: event.target.value}}" , *date_options))
+        ))
+    elif not time:
+        available_dates = bigdata.get(court, [])
+        time_options = [Option(t, value=t) for d, t in available_dates if d == date]
+        content.append(Form(
+            Label("เลือกเวลา", 
+                  Select(id="time", name="time", 
+                         hx_get="/update_table_tennis", hx_target="#preview", 
+                         hx_trigger="change, focusout", 
+                         hx_vals=f"js:{{court: '{court}', date: '{date}', time: event.target.value}}" , *time_options))
+        ))
+    else:
+        content.append(Container(Div(f"ท่านกำลังจะจอง: {court} | {date} | {time}"),
+                                 Form(
+                                     Button("ดำเนินการต่อไป", type="submit"),
+                                     method="get",
+                                     action="/"
+                                 )))
+    content.append(Div(id="preview"))
+    return Container(*content)
+
+
+@rt('/update_tennis')
+async def get(request: Request):
+    court = request.query_params.get("court")
+    date = request.query_params.get("date")
+    time = request.query_params.get("time")
+    return get_available_selection_tennis(court, date, time)
+
+@rt('/update_football')
+async def get(request: Request):
+    court = request.query_params.get("court")
+    date = request.query_params.get("date")
+    time = request.query_params.get("time")
+    return get_available_selection_football(court, date, time)
+
+@rt('/update_table_tennis')
+async def get(request: Request):
+    court = request.query_params.get("court")
+    date = request.query_params.get("date")
+    time = request.query_params.get("time")
+    return get_available_selection_table_tennis(court, date, time)
+
+@rt("/court_checking")
+def index(sport_type: str = None, selected_date: str = None):
+    from datetime import date as dt, timedelta
+
+    sport_type_options = [
+        Option("เทนนิส", value="เทนนิส"),
+        Option("ฟุตบอล", value="ฟุตบอล"),
+        Option("ปิงปอง", value="ปิงปอง")
+    ]
+    
+    date_options = [
+        Option((dt.today() + timedelta(days=i)).isoformat(),
+               value=(dt.today() + timedelta(days=i)).isoformat())
+        for i in range(31)
+    ]
+    
+    content = []
+    
+    if not sport_type:
+        content.append(Div(
+            H1("DMIS COURT"),
+            A("HOME", href="/"),
+            style="display: flex; justify-content: space-between; width: 100%;"
+        ))
+        content.append(Form(
+            Label("เลือกประเภทกีฬา"),
+            Select(id="sport_type", name="sport_type",
+                   hx_get="/update_table", hx_target="#preview",
+                   hx_trigger="change, focusout",
+                   hx_vals="js:{sport_type: event.target.value}",
+                   *sport_type_options)
+        ))
+    elif not selected_date:
+        content.append(Form(
+            Label("เลือกวันที่"),
+            Select(id="date", name="date",
+                   hx_get="/update_table", hx_target="#preview",
+                   hx_trigger="change, focusout",
+                   hx_vals=f"js:{{sport_type: '{sport_type}', date: event.target.value}}",
+                   *date_options)
+        ))
+    else:
+
+        time_range = [
+            "10:00-11:00", "11:00-12:00", "12:00-13:00",
+            "13:00-14:00", "14:00-15:00", "15:00-16:00",
+            "16:00-17:00", "17:00-18:00", "18:00-19:00",
+            "19:00-20:00", "20:00-21:00"
+        ]
+        
+        court_names, already_accepts, not_accepts = system.get_info_for_create_table(sport_type, selected_date)
+        
+        content.append(Container(
+            H3(f"ตารางจองสนาม {sport_type} ณ วันที่ {selected_date}", style='text-align: center'),
+            Table(
+                Thead(
+                    Tr(
+                        Th("เวลา/สนาม"), 
+                        *[Th(time) for time in time_range]  
+                    )
+                ),
+                Tbody(
+                    *[
+                        Tr(
+                            Td(court_name),
+                            *[
+                                Td(
+                                    "จองได้" if court_name not in [i[0] for i in already_accepts + not_accepts] else
+                                    "รอการยืนยัน" if [court_name, time] in not_accepts else
+                                    "จองแล้ว" if [court_name, time] in already_accepts else
+                                    "จองได้"
+                                )
+                                for time in time_range  
+                            ]
+                        )
+                        for court_name in court_names
+                    ]
+                )
+            )
+        ))
+    
+    content.append(Div(id="preview"))
+    return Container(*content)
+
+@rt('/update_table')
+async def get(request: Request):
+    sport_type = request.query_params.get("sport_type")  
+    selected_date = request.query_params.get("date")
+    return index(sport_type, selected_date)
+
+@rt("/home") 
+def get_home():
+    return Container(
+       Div(
+            H1("DMIS COURT"),
+            Div(
+                A("ACCOUNT", href="/account"),
+                cls="navbar-links"
+            ),
+            cls="navbar"
+        ),
+        
+        Div(
+            Form(
+                Button("COUPON ส่วนลด", cls="button_w"),
+                method="get",
+                action="/coupon"
+            ),
+            Form(
+                Button("ใช้ POINT เพื่อแลกสินค้าต่าง ๆ", cls="button_w"),
+                method="get",
+                action="/redeem"
+            ),
+            style="display: flex; gap: 10px; justify-content: center;",
+            cls="hero"
+        ),
+        
+        Div(
+            Form(
+                Button("BOOK TENNIS COURT", cls="button_p"),
+                method="get",
+                action="/booking_tennis_court"
+            ),
+            Form(
+                Button("BOOK TABLE TENNIS COURT", cls="button_p"),
+                method="get",
+                action="/booking_table_tennis_court"
+            ),
+            Form(
+                Button("BOOK FOOTBALL COURT", cls="button_p"),
+                method="get",
+                action="/booking_football_court"
+            ),
+            style="display: flex; gap: 10px; justify-content: center;",
+            cls="hero"
+        ),
+
+        Div(
+            A("contact us", href="/contact"),
+            cls="footer"
+        )
+    )
+
+@rt("/account")
+def get():
+    username = memberA.get_username
+    return Container(
+        Div(
+            H1("DMIS COURT"),
+            Div(
+                A("ACCOUNT", href="/account"),
+                cls="navbar-links"
+            ),
+            cls="navbar"
+        ),
+        
+        Div(
+            Form(
+                Button("COUPON ส่วนลด", cls="button_w"),
+                method="get",
+                action="/coupon"
+            ),
+            Form(
+                Button("ใช้ POINT เพื่อแลกสินค้าต่าง ๆ", cls="button_w"),
+                method="get",
+                action="/redeem"
+            ),
+            style="display: flex; gap: 10px; justify-content: center;",
+            cls="hero"
+        ),
+        
+        Div(
+            Form(
+                Button("BOOK TENNIS COURT", cls="button_p"),
+                method="get",
+                action="/booking_tennis_court"
+            ),
+            Form(
+                Button("BOOK TABLE TENNIS COURT", cls="button_p"),
+                method="get",
+                action="/booking_table_tennis_court"
+            ),
+            Form(
+                Button("BOOK FOOTBALL COURT", cls="button_p"),
+                method="get",
+                action="/booking_football_court"
+            ),
+            style="display: flex; gap: 10px; justify-content: center;",
+            cls="hero"
+        ),
+
+        # Footer
+        Div(
+            A("contact us", href="/contact"),
+            cls="footer"
+        ),
+        # แถบด้านข้าง
+        Div(
+            A("X", href="/home", style="color: #6A31A5; text-decoration: none; position: absolute; top: 10px; right: 10px;"),
+            H5(f"Hello, {username}", style="color: #6A31A5;"),
+            
+            Form(
+                Button("MY PROFILE", cls = "button-side"),
+                method="get",
+                action="/my-profile",
+                style="width: 100%; display: flex; flex-direction: column; align-items: flex-start;",
+            ),
+            
+            Div(
+                Button("ประวัติการจอง", cls="button-side"),
+                Button("เปลี่ยนรหัสผ่าน", cls="button-side"),
+                Button("ลบบัญชี", cls="button-side"),
+                style="display: flex; flex-direction: column; align-items: flex-start;",
+            ),
+
+            A("Log out", href="/", style="color: #6A31A5; text-decoration: none; display: block; margin-top: 10px;"),
+            style="position: fixed; right: 0; top: 0; background-color: #e9d5ff; padding: 20px; width: 220px; height: 100vh; box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1); z-index: 9999;"
+        )
+    )
+
+@rt("/my-profile")
+def get():
+    username = memberA.get_username
+    name = memberA.get_name
+    surname = memberA.get_surname
+    birthdate = memberA.get_birthdate
+    gender = memberA.get_gender
+    gmail = memberA.get_gmail
+    phone = memberA.get_phone
+    point = memberA.get_point
+    coupon = memberA.get_coupon_list
+    dmis_coin = memberA.get_dmis_coin
+    return Container(
+        # Navbar
+        Div(
+            H1("DMIS COURT"),
+            Div(A("HOME", href="/home"), cls="navbar-links"),
+            cls="navbar"
+        ),
+        # Main content
+        Div(
+            # Profile Section
+            Div(
+                Div(
+                    Img(src="https://i.pinimg.com/736x/15/0f/a8/150fa8800b0a0d5633abc1d1c4db3d87.jpg", style="width: 80px; height: 80px; border-radius: 50%; background-color: #d8b4fe;"),
+                    H5(username, style="text-align: center; font-weight: bold; padding-top: 10px;"),
+                    style="display: flex; flex-direction: column; align-items: center;"
+                ),
+                
+                Div(
+                H4("ชื่อ: ", style="text-align: left; padding-left: 80px;"), 
+                H4(name, style="text-align: left;"),
+                H4("นามสกุล: ", style="text-align: left; padding-left: 80px;"), 
+                H4(surname, style="text-align: left;"),
+                H4("วันเกิด: ", style="text-align: left; padding-left: 80px;"), 
+                H4(birthdate, style="text-align: left;"),
+                H4("เพศ: ", style="text-align: left; padding-left: 80px;"), 
+                H4(gender, style="text-align: left;"),
+                H4("E-mail: ", style="text-align: left; padding-left: 80px;"), 
+                H4(gmail, style="text-align: left;"),
+                H4("เบอร์โทรศัพท์: ", style="text-align: left; padding-left: 80px;"),
+                H4(phone, style="text-align: left;"),
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;"
+            ),
+
+                
+                style="background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); width: 50%;"
+            ),
+
+            # Sidebar Menu
+            Div(
+                Button(f"POINT: {point}", cls="side-button"),
+                Form(
+                    Button("MY COUPON", type="submit", cls="side-button"),
+                    method = "get",
+                    action = "/my-coupon"
+                    ),
+                Button(f"DMIS COIN: {dmis_coin}", cls="side-button"),
+                Form(
+                    Button("แก้ไขข้อมูลส่วนตัว", type="submit", cls="side-button"),
+                    method = "get",
+                    action = "/edit-profile"
+                    ),
+                style="display: flex; flex-direction: column; gap: 40px;"
+            ),
+            style="display: flex; justify-content: space-between; padding: 20px; background-color: #E6D0FF; padding-top: 165px;"
+        ),
+        
+        # Footer
+        Div(
+            A("contact us", href="/contact"),
+            cls="footer"
+        )
+    )
+    
+@rt("/my-coupon")
+def get():
+    coupons = system.search_member_by_account_id("00004").get_coupon_list  # Assuming memberA is the logged-in member
+    coupon_cards = [
+        Card(
+            H3(f"Coupon Code: {coupon.get_coupon_code}"),
+            P(f"Discount: {coupon.get_coupon_discount}%"),
+            P(f"Expire Date: {coupon.get_expire_date}"),
+            cls="coupon-card"
+        )
+        for coupon in coupons
+    ]
+    
+    return Container(
+        # Navbar
+        Div(
+            H1("DMIS COURT"),
+            Div(A("HOME", href="/home"), cls="navbar-links"),
+            cls="navbar"
+        ),
+        
+        # Main content
+        Div(
+            Div(H2("My Coupons", style="color: #3e1a7d; text-align: center;"),
+            Div(*coupon_cards, cls="coupon-grid"),
+            style="padding: 20px; background-color: #E6D0FF; padding-top: 120px;"),
+        ),
+        
+        # Footer
+        Div(
+            A("contact us", href="/contact"),
+            cls="footer"
+        )
+    )
+
+
+@rt("/edit-profile")
+def get():
+    username = memberA.get_username
+    name = memberA.get_name
+    surname = memberA.get_surname
+    birthdate = memberA.get_birthdate
+    gender = memberA.get_gender
+    gmail = memberA.get_gmail
+    phone = memberA.get_phone
+    return Container(
+        # Navbar
+        Div(
+            H1("DMIS COURT"),
+            Div(A("HOME", href="/home"), cls="navbar-links"),
+            cls="navbar"
+        ),
+
+        # Main content
+        Div(
+            # Profile Section
+            Div(
+                Div(
+                    Img(src="https://i.pinimg.com/736x/15/0f/a8/150fa8800b0a0d5633abc1d1c4db3d87.jpg", style="width: 80px; height: 80px; border-radius: 50%; background-color: #d8b4fe;"),
+                    H5(username, style="text-align: center; font-weight: bold; padding-top: 10px;"),
+                    style="display: flex; flex-direction: column; align-items: center;"
+                ),
+                
+                Form(
+                    Label("ชื่อ: ", style="color: #000000; text-align: left; padding-left: 30px;"), Input(name="name",placeholder=name, type="text", cls="input", style="height: 30px; background-color: #ffffff; color: #000000;"),
+                    Label("นามสกุล", style="color: #000000; text-align: left; padding-left: 30px;"), Input(name="surname", placeholder=surname, type="text", cls="input", style="height: 30px; background-color: #ffffff; color: #000000;"),
+                    Label("วันเกิด", style="color: #000000; text-align: left; padding-left: 30px;"), Input(name="birth_date",value=birthdate, type="date", cls="input", style="height: 30px; background-color: #ffffff; color: #000000;"),
+                    Label("เพศ", style="color: #000000; text-align: left; padding-left: 30px;"), Input(name="gender", placeholder=gender,type="text", cls="input", style="height: 30px; background-color: #ffffff; color: #000000;"),
+                    Label("E-mail", style="color: #000000; text-align: left; padding-left: 30px;"), Input(name="gmail", placeholder=gmail, type="email", cls="input", style="height: 30px; background-color: #ffffff; color: #000000;"),
+                    Label("เบอร์โทรศัพท์", style="color: #000000; text-align: left; padding-left: 30px;"), Input(name="phone", placeholder=phone, type="text", cls="input", style="height: 30px; background-color: #ffffff; color: #000000;"),
+                    
+                    
+                    Button("ยืนยันการแก้ไข", type="submit", style="font-weight: bold; cursor: pointer; width: 200px; background-color: #A56EFF;"),
+                    method="post",
+                    action="/edit-profile-data",
+                    # style="display: flex; justify-content: flex-end; margin-top: 20px;" # ใช้ flex-end ดันไปขวา
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;",
+                ),
+                
+                style="background-color: white; padding: 20px; border-radius: 15px; width: 50%;"
+            ),
+
+            # Sidebar Menu
+            Div(
+                Form(
+                    Button("ยกเลิกการแก้ไข", type="submit", cls="side-button"),
+                    method = "get",
+                    action = "/my-profile"
+                    ),
+                style="display: flex; flex-direction: column; gap: 40px;"
+            ),
+
+            style="display: flex; justify-content: space-between; padding: 20px; background-color: #E6D0FF; padding-top: 120px; align-items: right;"
+        ),
+
+        # Footer
+        Div(
+            A("contact us", href="/contact"),
+            cls="footer"
+        )
+    )
+    
+
+@rt("/edit-profile-data", methods=["POST"])
+async def edit_profile(request):
+        form_data = await request.form()
+        print("Received form data:", form_data)  # ตรวจสอบค่าที่ได้รับจากฟอร์ม
+
+        new_name = form_data.get("name")
+        new_surname = form_data.get("surname")
+        new_birthdate = form_data.get("birth_date")
+        new_gender = form_data.get("gender")
+        new_gmail = form_data.get("gmail")
+        new_phone = form_data.get("phone")
+
+        print(f"New Name: {new_name}, New Surname: {new_surname}, New Birthdate: {new_birthdate}, New Gender: {new_gender}, New Gmail: {new_gmail}, New Phone: {new_phone}")
+
+        # อัปเดตข้อมูล
+        #ต้องเขียนเงื่อนไขว่าถ้าค่าที่ได้รับมาเป็นชื่อ ก็แก้แค่ชื่อ แต่ถ้าได้ none มาก็ไม่ต้องทำไร ต้องไปแก้ใน setter ว่าไม่ต้อง
+        # ่ใช้ if == None return ชื่อเดิมมา
+        memberA.set_name(new_name)
+        memberA.set_surname(new_surname)
+        memberA.set_birth_date(new_birthdate)
+        memberA.set_gender(new_gender)
+        memberA.set_gmail(new_gmail)
+        memberA.set_phone(new_phone)
+
+        # Redirect ไปหน้าโปรไฟล์หลังแก้ไขเสร็จ
+        return Main(
+                H1("แก้ไขข้อมูลสำเร็จ!", style="color: #A56EFF;"),
+                A("กลับสู่หน้าหลัก", href="/home", style="color: white; text-decoration: none; font-weight: bold;"),
+                cls="success"
+                )
+
+#################################          หน้าแลกของ         ##############################################
+@rt("/redeem")  # redeem page
+def get():
+    points = system.search_member_by_account_id("00004").get_point
+    gift_list = system.get_gift_list
+    
+    return Container(
+        # Navbar
+        Div(
+            H1("DMIS COURT"),
+            Div(A("HOME", href="/"), cls="navbar-links"),
+            cls="navbar"
+        ),
+
+        # แสดงแต้มที่มีอยู่
+        Div(
+            Div(H4(f"{points} points", style={"font-weight": "bold", "color": "#ffffff", "padding-top": "10px"}), cls="points"),
+        ),
+        
+        # Hero Section - แสดงสินค้าทั้งหมด
+        Grid(
+            *[
+                Card(
+                    Img(src = gift.get_gift_url, height="100px", width="100px"),  # ใช้ URL ของแต่ละสินค้า
+                    Div(H3(gift.get_gift_name), H3(f"{gift.get_gift_point}pt"), cls="data"),
+                    Form(
+                        Hidden(name="item_name", value = gift.get_gift_name),
+                        Hidden(name="item_cost", value = gift.get_gift_point),
+                        Button("แลกเลย!", type="submit"),
+                        action="/redeem_item", method="post",
+                        onsubmit="return confirmRedeem(this);"
+                    ),
+                    cls="water"
+                )
+                for gift in gift_list  # วนลูปสร้างการ์ด
+            ],
+            cls="grid"
+        ),
+
+
+        # Footer
+        Div(A("contact us", href="/contact"), cls="footer"),
+        
+        Script("""
+        function confirmRedeem(form) {
+            let confirmAction = confirm("คุณต้องการแลกสินค้านี้จริงหรือไม่?");
+            if (confirmAction) {
+                return true;  // ส่งฟอร์มไป /redeem_item
+            } else {
+                return false; // ยกเลิก
+            }
+        }
+        """)
+    )
+
+
+@rt("/redeem_item", methods=["post"])
+async def redeem_item(request):
+    try:
+        form_data = await request.form()
+        member = system.search_member_by_account_id("00004")
+        item_name = form_data.get("item_name")
+        item_cost = int(form_data.get("item_cost"))
+        
+        if member.check_item_point(item_cost):
+            # ค้นหาของแลกใน backend
+            gift = system.search_gift_by_name(item_name)
+            if gift:
+                gift.deduct_amount()  # ลบจำนวนของแลก
+                # print(gift.get_gift_amount)
+                return Main(
+                    H3(f"แลก {item_name} สำเร็จ! Point คงเหลือ {member.get_point} points"),
+                    A("กลับสู่หน้าหลัก", href="/home"),
+                    cls="success"
+                )
+            else:
+                return Main(
+                    H3("ไม่พบของแลกที่ต้องการ", style={"color": "red"}),
+                    A("กลับไปเลือกใหม่", href="/redeem"),
+                    cls="error"
+                )
+        else:
+            return Main(
+                H3("Point ไม่พอTT", style={"color": "#ffffff"}),
+                A("กลับไปเลือกใหม่", href="/redeem"),
+                cls="error"
+            )
+    except Exception as e:
+        return Main(
+            H3("เกิดข้อผิดพลาด: " + str(e), style={"color": "red"}),
+            A("กลับไปเลือกใหม่", href="/redeem"),
+            cls="error"
+        )
+
+############################ เช่าอุปกรณ์ ########################################
+@rt("/equipment-rental")
+def get():
+    return Container(
+        # Navbar
+        #Div(
+        #     H1("DMIS COURT"),
+        #     Div(A("HOME", href="/"), cls="navbar-links"),
+        #     cls="navbar"
+        # ),
+
+        # search user
+        Form(
+            Input(placeholder="Search user", name="username"),
+            Button("Search", type="submit"),
+            method = "post",
+        ),
+
+        # Footer
+        Div(A("contact us", href="/contact"), cls="footer")
+    )
+
+@rt("/equipment-rental", methods=["post"])
+async def post(request):
+    form_data = await request.form()
+    username = form_data.get("username")
+    member = system.search_member_by_username(username)
+    if not member:
+        return "User not found"
+    else:
+        history = member.view_history
+        if not history:
+            return Container(
+                H1(f"No successful bookings found for user: {username}"),
+                A("Back to search", href="/equipment-rental")
+            )
+        sports = set(booking.get_court_sport_type for booking in history)
+        date_time_options = []
+        for booking in history:
+            date_time_options.append(Option(f"{booking.get_date} {booking.get_time}", value=f"{booking.get_date} {booking.get_time}"))
+
+        return Container(
+            H1(f"User: {member.get_username}"),
+            Form(
+                Hidden(name="username", value=username),
+                Label("เลือกกีฬา:", Select(
+                    *[Option(sport, value=sport) for sport in sports],
+                    id="choose_sport", name="choose_sport"
+                )),
+                Label("เลือกวันที่และเวลา:", Select(
+                    *date_time_options,
+                    id="choose_date_time", name="choose_date_time"
+                )),
+
+                Button("ต่อไป", type="submit"),
+                action="/select-equipment",  # ส่งไปที่ /select-equipment
+                method="post"       # ใช้ POST
+            )
+        )
+        
+@rt("/select-equipment", methods=["post"])
+async def post(request):
+    form_data = await request.form()
+    username = form_data.get("username")
+    sport = form_data.get("choose_sport")
+    date_time = form_data.get("choose_date_time")
+
+    equipment_list = system.get_equipment_by_sport(sport)
+    if equipment_list is None:
+        return "ไม่มีกีฬานี้ในระบบ"
+
+    equipment_options = []
+    for equipment in equipment_list:
+        equipment_options.append(Div(
+            Img(src=equipment.get_image_url, height="100px", width="100px"),
+            Label(
+                f"อุปกรณ์: {equipment.get_item_name} ราคา: {equipment.get_item_price} บาท/ชั่วโมง", 
+                Input(type="checkbox", name="equipment", value=equipment.get_item_id), style="color: #3e1a7d"), style="display: flex; align-items: center; justify-content: space-between color: #3e1a7d" 
+        ))
+
+    return Container(
+        H1(f"เลือกอุปกรณ์สำหรับกีฬา: {sport}"),
+        Form(
+            Hidden(name="username", value=username),
+            Div(
+                *equipment_options,
+                id="choose_equipment", name="choose_equipment"
+            ),
+            Hidden(name="choose_date_time", value=date_time),
+            Button("ยืนยันการเช่า", type="submit"),
+            action="/SubmitEquipmentRental",
+            method="post"
+        )
+    )
+    
+@rt("/SubmitEquipmentRental", methods=["post"]) 
+async def post(request):
+    form_data = await request.form()
+    username = form_data.get("username")
+    date_time = form_data.get("choose_date_time")
+    equipment_ids = form_data.getlist("equipment")
+
+    member = system.search_member_by_username(username)
+    if not member:
+        return "User not found"
+    
+    total_price = system.calculate_total_equipment_price(equipment_ids)
+    date, time = date_time.split()
+    equipment_list = [system.search_equipment_by_id_for_rent(equipment_id) for equipment_id in equipment_ids]
+    system.add_equipment_rental(EquipmentRental(equipment_list, date, time, member))
+    # print(system.get_equipment_rental)
+    return Container(
+        H1(f"User: {member.get_username}", style="color: #3e1a7d"),
+        H2("อุปกรณ์ที่เช่า:", style="color: #3e1a7d"),
+        Ul(*[Li(equipment.get_item_name, style="color: #3e1a7d") for equipment in equipment_list]),
+        H2("วันที่และเวลา:", style="color: #3e1a7d"),
+        P(f"{date} {time}", style="color: #3e1a7d"),
+        H2("ยอดรวมทั้งหมด:", style="color: #3e1a7d"),
+        P(f"{total_price} บาท", style="color: #3e1a7d"),
+        A("กลับสู่หน้าหลัก", href="/", style="color: #3e1a7d"),
+    )
+
+
+###############################################################################
+
+
+
+serve(host="127.0.0.1", port=5022)

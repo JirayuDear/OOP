@@ -1,0 +1,110 @@
+[
+    {
+        "setname": "test3_lab2",
+        "describe": "item 3 lab 2",
+        "testcase": [
+            {
+                "input": "{} | 'python' | 50",
+                "expected_output": "{'python': 50}, Average score: 50.00"
+            },
+            {
+                "input": "{'python': 50} | 'calculus' | 60",
+                "expected_output": "{'python': 50, 'calculus': 60}, Average score: 55.00"
+            },
+            {
+                "input": "{'math': 80, 'science': 70} | 'english' | 90",
+                "expected_output": "{'math': 80, 'science': 70, 'english': 90}, Average score: 80.00"
+            },
+            {
+                "input": "{} | 'physics' | -10",
+                "expected_output": "{}, Average score: 0.00"
+            },
+            {
+                "input": "{'history': 65} | 'history' | 75",
+                "expected_output": "{'history': 75}, Average score: 75.00"
+            },
+            {
+                "input": "{} | '' | 55",
+                "expected_output": "{}, Average score: 0.00"
+            },
+            {
+                "input": "{'a':1, 'b':2, 'c': 3, 'd': 4, 'e': 5} | 'f' | 6",
+                "expected_output": "{'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6}, Average score: 3.50"
+            },
+            {
+                "input": "{'subject1': 100} | 'subject1' | 0",
+                "expected_output": "{'subject1': 0}, Average score: 0.00"
+            },
+            {
+                "input": "{} | 'programming' | 100",
+                "expected_output": "{'programming': 100}, Average score: 100.00"
+            },
+            {
+                "input": "{'Math':95, 'Physics':92, 'Chemistry':88} | 'Biology' | 90",
+                "expected_output": "{'Math': 95, 'Physics': 92, 'Chemistry': 88, 'Biology': 90}, Average score: 91.25"
+            }
+        ]
+    },
+    {
+        "setname": "test5_lab2",
+        "describe": "item 5 lab 2",
+        "testcase": [
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | artist | Bon Jovi",
+                "expected_output": "{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi'}}"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi'}} | 2548 | tracks | Wanted Dead or Alive",
+                "expected_output": "{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi', 'tracks': ['Wanted Dead or Alive']}}"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi', 'tracks': ['Let it Rock']}} | 2548 | tracks | You Give Love a Bad Name",
+                "expected_output": "{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi', 'tracks': ['Let it Rock', 'You Give Love a Bad Name']}}"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi'}} | 2548 | albumTitle | ''",
+                "expected_output": "{'2548': {'artist': 'Bon Jovi'}}"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | artist | Bon Jovi",
+                "expected_output": "{'2548': {'albumTitle': 'Slippery When Wet', 'artist': 'Bon Jovi'}}"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | tracks | Wanted Dead or Alive",
+                "expected_output": "{'2548': {'albumTitle': 'Slippery When Wet', 'tracks': ['Wanted Dead or Alive']}}"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet', 'tracks': ['Let it Rock']}} | 2548 | tracks | ''",
+                "expected_output": "{'2548': {'albumTitle': 'Slippery When Wet'}}"
+            },
+            {
+                "input": "{'2548': {}} | 2548 | tracks | Let it Rock",
+                "expected_output": "{'2548': {'tracks': ['Let it Rock']}}"
+            },
+            {
+                "input": "{'2548': {}} | 2548 | albumTitle | Slippery When Wet",
+                "expected_output": "{'2548': {'albumTitle': 'Slippery When Wet'}}"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet'}} | -1 | artist | Bon Jovi",
+                "expected_output": "Invalid"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | artist | ''",
+                "expected_output": "Invalid"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet'}} | 0 | artist | Bon Jovi",
+                "expected_output": "Invalid"
+            },
+            {
+                "input": "{InvalidString} | 2548 | artist | Bon Jovi",
+                "expected_output": "Invalid"
+            },
+            {
+                "input": "{'2548': {'albumTitle': 'Slippery When Wet'}} | 2548 | unknownProperty | Some Value",
+                "expected_output": "Invalid"
+            }
+        ]
+    }
+]
