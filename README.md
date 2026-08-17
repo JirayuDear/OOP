@@ -1,46 +1,185 @@
-## Lab Directory Progression (Lab_01 to Lab_05)
+# Object-Oriented Programming and Domain Systems Design Lab Suite
 
-### Lab_01: Fundamental Object-Oriented Domain Model
-`Lab_01` establishes the foundational enterprise domain model of the application. It maps real-world entities into clean Python classes, enforcing data encapsulation and entity-relationship boundaries.
-*   **Key Implementations**:
-    *   Design of the `User` class to hold demographic details (Citizen ID, Phone, Birth Date).
-    *   Design of the basic `Account` base class with automated ID generation rules (`get_next_account_id`).
-    *   Implementation of the `Court` class containing sport metadata (Tennis, Football, Table Tennis) alongside hourly pricing schedules and loyalty point incentives.
-    *   Creation of the `System` class acting as the root orchestrator (Aggregator Pattern) to register users, accounts, and courts.
+An industry-grade, progressive suite of computational algorithms, domain-driven architectures, and object-oriented systems. This repository documents a structured learning path transitioning from basic algorithmic puzzle-solving to designing complex, secure transactional business architectures utilizing advanced Python patterns, custom state verification, inheritance hierarchies, and automated unit testing frameworks.
 
-### Lab_02: Business Logic & Scheduling Operations
-`Lab_02` introduces logical operators, temporal checks, and operational scheduling routines to resolve real-world booking conflicts.
-*   **Key Implementations**:
-    *   Creation of the `CourtBooking` entity tracking reservation status, total cost, and booking schedules.
-    *   Conflict resolution algorithms: Implementation of booking validation rules to ensure no court is double-booked for overlapping time ranges (e.g., 10:00-11:00 vs. 11:00-12:00) within a 30-day scheduling horizon.
-    *   Dynamic time range logic using Python `datetime` and `timedelta` libraries to parse, sort, and isolate booked time slots.
+---
 
-### Lab_03: Interactive Web User Interface & Session Management
-`Lab_03` ports the core domain logic into an interactive web interface using FastHTML, providing real-time responsive elements without full-page reloads.
-*   **Key Implementations**:
-    *   Integration of FastHTML components (`Container`, `Div`, `Form`, `Table`, `Select`) to replace terminal output.
-    *   Authentication workflows: Secure login and sign-up mechanics with data validation rules (e.g., verifying phone lengths, preventing duplicate usernames or emails).
-    *   Active session management: Leveraging Starlette sessions to preserve stateful user interactions (`account_id`) across routing contexts.
-    *   Dynamic court schedule visualization tables showcasing available, pending, and reserved slots based on sports categorization.
+## Technical Stack
 
-### Lab_04: Payments, Loyalty Points, and Redemption System
-`Lab_04` introduces financial transactions, promotional code parsing, and point redemptions within customer accounts.
-*   **Key Implementations**:
-    *   **Promotional System**: Implementation of the `Coupon` class with percentage discounts and expiration constraints.
-    *   **Transactional Branching**: Dual payment execution models:
-        1.  *QR Code Payments*: Interactive receipt upload interface using HTMX progress-bar listeners and server-side storage handling.
-        2.  *DMIS Coins*: Virtual currency balance checking and debit logic (`deduct_dmis_coins`).
-    *   **Redemption Store**: Mechanics to redeem system rewards (`Redeem` class) using accumulated member loyalty points, complete with automatic inventory deduction validations.
-    *   **Countdowns**: Asynchronous front-end countdown scripts redirecting users upon payment session expiration (5-minute limits).
+* **Language**: Python 3.10+
+* **Libraries**: 
+  * `unittest` (Automated regression testing)
+  * `json` (Serialization, parsing, and record state management)
+  * `datetime` (Temporal calculations, calendar rules, and maturity verification)
+* **Design Paradigms**: Procedural Algorithms, Object-Oriented Programming (OOP), Domain-Driven Design (DDD), Test-Driven Development (TDD) elements.
 
-### Lab_05: Equipment Rental & Booking Cancellation Lifecycle
-`Lab_05` completes the application cycle by introducing auxiliary equipment rentals linked to active bookings and safe transaction reversal workflows.
-*   **Key Implementations**:
-    *   **Equipment Rental Engine**: Dynamic inventory matching where members can rent specific sports gear (rackets, balls) corresponding exclusively to the sport type of their active reserved slot.
-    *   **Booking Cancellation Lifecycle**:
-        *   Initiation of cancellation requests by customers (`รอยืนยันการยกเลิก`).
-        *   Administrative dashboard interface enabling validation, approval, and decline of cancellations.
-        *   Auto-refund engine: Automatically calculates and processes an 80% monetary refund credited directly back to the member's DMIS Coin balance upon approved cancellation.
+---
+
+## Project Structure
+
+The codebase is organized into modular segments representing developmental progressions:
+
+```text
+OOP/
+├── Lab_01/
+│   ├── Lab_01_1.py       # Mathematical series term expansion (N + NN + NNN + NNNN)
+│   ├── Lab_01_2.py       # Largest palindrome product logic
+│   ├── Lab_01_3.py       # Deterministic commercial parking fee calculation system
+│   ├── Lab_01_5.py       # Lexicographical minimum sequence arrangement (excluding leading zeros)
+│   └── Lab_01_6.py       # Optimal adjacent-element array product optimization
+├── Lab_02/
+│   ├── Lab_02_1.py       # Gregorian calendar day-of-year calculation with leap year validation
+│   ├── Lab_02_2.py       # Absolute temporal duration counter between arbitrary dates
+│   ├── Lab_02_3.py       # Dynamic score assignment and statistical computation
+│   ├── Lab_02_4.py       # Nested JSON student registry manager
+│   ├── Lab_02_4test.py   # Multi-student statistics helper module
+│   ├── Lab_02_5.py       # Music collection inventory state controller (Dynamic CRUD operations)
+│   └── Lab_02_test.py    # Standalone verification suite for JSON updates
+├── Lab_03/
+│   └── Lab_03.py         # Academic registration portal (Students, Courses, Grading, GPA computation)
+├── Lab_04/
+│   └── Lab_04.py         # Basic ATM physical/virtual ledger transaction framework
+└── Lab_05/
+    └── Lab_05.py         # Production-grade Enterprise Banking Engine & Automated Test Suite
+```
+
+---
+
+## Architectural Features
+
+### 1. Algorithmic Processing Engine (Lab 01 & Lab 02)
+* **Deterministic Calculations**: Modules handle mathematical transformations such as checking and computing temporal offsets, processing raw text inputs, and performing numerical validation without third-party mathematical wrappers.
+* **Leap Year and Date Arithmetician**: Features a complete, zero-dependency calendar management program that validates input format boundaries, identifies Gregorian leap years, and measures temporal gaps down to absolute days.
+* **Music Inventory State Machine**: Implements dynamic object updating mimicking real-world database transactions. Modifies tracks, dynamic properties, and artist collections based on explicit transactional priorities.
+
+### 2. Academic Enrollment and Performance Analytics (Lab 03)
+* **Domain Model Components**: Contains entities representing physical domain models (`Student`, `Teacher`, `Subject`, `Enroll`).
+* **Encapsulation & Mutator Guardrails**: Access to critical data properties is strictly managed using Python property decorators (`@property` and `@setter`), filtering invalid value assignments.
+* **Registry Querying**: Supports complex querying mechanisms, including lookup operations by identifiers, registry listings, course rosters, and dynamic GPA evaluations based on credit-weighted scale points.
+
+### 3. Basic Financial Transaction Machinery (Lab 04)
+* **Security & Pin Authentication**: Simulates physical transaction flows with validation steps like physical pin entry and database records linking cards to legal owners.
+* **Ledger Auditing**: Builds atomic transactions (`Transaction`) documenting state updates: operation categories, timestamp proxies, machine identification codes, and ledger changes.
+* **Physical & Policy Constraints**: Monitors hardware cash limits and imposes transaction rules such as maximum daily withdrawal limits of 40,000 units.
+
+### 4. Enterprise Banking Architecture & Automated Testing Suite (Lab 05)
+* **Polymorphic Account Hierarchy**:
+  * `SavingAccount`: Performs annual compound interest calculations.
+  * `FixedAccount`: Tracks deposit dates and enforces lock-up periods, checking dates against maturity targets before executing withdrawals.
+  * `CurrentAccount`: Manages high-volume transactional pipelines without individual processing limits.
+* **Hierarchical Payment Instruments**: Uses an inheritance hierarchy for payment instruments (`Card` -> `DebitCard` -> `ShoppingDebitCard` / `TravelDebitCard` and `ATMCard`), applying specialized behaviors like card-specific annual fees and merchant point-of-sale cashbacks.
+* **Multi-Channel Delivery System**: Executes actions depending on transaction channels:
+  * `ATMMachine`: Facilitates automated, self-service transactions.
+  * `Counter`: Runs manual transactions requiring government-issued identity verification.
+  * `EDCMachine`: Coordinates store-front retail processing with point-of-sale rules.
+* **Enterprise Verification Suite**: Integrates 19 unit tests checking for edge cases like negative deposits, withdrawal limit breaches, early maturity withdrawals, and wrong credit card point-of-sale swipes.
+
+---
+
+## Core Domain Models (Lab 05 Class Diagram)
+
+```text
+                           ┌──────────┐
+                           │   Bank   │
+                           └───┬──────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         ▼                     ▼                     ▼
+     ┌───────┐           ┌───────────┐         ┌───────────┐
+     │ User  │           │ Account   │         │  Channel  │
+     └───────┘           └─────┬─────┘         └─────┬─────┘
+                               │                     │
+         ┌─────────────────────┼─────────┐           ├──────────────┬──────────────┐
+         ▼                     ▼         ▼           ▼              ▼              ▼
+  ┌─────────────┐       ┌────────────┐ ┌───┐ ┌───────────┐   ┌───────────┐   ┌───────────┐
+  │SavingAccount│       │FixedAccount│ │...│ │ATMMachine │   │  Counter  │   │EDCMachine │
+  └─────────────┘       └────────────┘ └───┘ └───────────┘   └───────────┘   └───────────┘
+```
+
+---
+
+## Installation & Environment Setup
+
+### Prerequisites
+* Python 3.10 or higher.
+* No external packages required. Standard library dependencies are used to guarantee stability and security.
+
+### Cloning the Repository
+```bash
+git clone https://github.com/your-username/OOP-Lab-Suite.git
+cd OOP-Lab-Suite
+```
+
+---
+
+## Running the Applications
+
+### Executing Standalone Algorithmic Modules (Labs 1 & 2)
+To run isolated computational problems, execute the script and input parameters via standard input (stdin):
+
+```bash
+# Execute the parking fee calculator
+python Lab_01/Lab_01_3.py
+
+# Input format: [Entry Hour] [Entry Min] [Exit Hour] [Exit Min]
+# Example Input: 07 30 12 45
+```
+
+### Running the Academic Portal (Lab 03)
+Execute the registration script to run pre-configured test scenarios mapping the system's database interactions:
+
+```bash
+python Lab_03/Lab_03.py
+```
+
+### Simulating Financial Transactions (Lab 04)
+Run the transactional model to execute physical system simulations, database linking, and transaction history output:
+
+```bash
+python Lab_04/Lab_04.py
+```
+
+### Running the Enterprise Banking Test Suite (Lab 05)
+To execute the automated regression test suite containing 19 test cases, run:
+
+```bash
+python -m unittest Lab_05/Lab_05.py
+```
+
+#### Test Suite Verification Output Example:
+```text
+...................
+----------------------------------------------------------------------
+Ran 19 tests in 0.005s
+
+OK
+```
+
+---
+
+## Detailed Test Case Coverage (Lab 05)
+
+The automated test coverage validates the robustness of the enterprise banking system against the following test scenarios:
+
+1. **Normal Deposit**: Verifies ATM deposits update ledger balances and write auditing transactions.
+2. **Negative Deposit Rejection**: Ensures negative values are caught and rejected.
+3. **Withdrawal Over Limits**: Blocks saving account withdrawal attempts exceeding the 50,000 unit limit.
+4. **Interest Calculation**: Confirms compound interest calculations add correct earnings to balances.
+5. **Counter Deposit**: Validates bank teller deposit pipelines.
+6. **Identity Fraud Prevention**: Confirms deposits/withdrawals over the counter fail when using incorrect citizen credentials.
+7. **Fixed Account Initialization**: Tests the creation of locked savings accounts.
+8. **Premature Fixed Withdrawal**: Ensures withdrawing before fixed term limits triggers penalty rules.
+9. **Zero-Balance Withdrawal Rejection**: Blocks withdrawals from accounts without initial deposits.
+10. **Multiple Deposit Layering**: Verifies sequential deposits increment target balances without ledger drift.
+11. **Matured Fixed Withdrawal**: Ensures withdrawals at maturity award full calculated interest.
+12. **Current Account Deposits**: Checks ledger updates for non-savings accounts.
+13. **Large Current Account Withdrawals**: Verifies high-volume transactions bypass savings account limits.
+14. **Overdraft Protection**: Validates current account withdrawal attempts exceeding available limits are blocked.
+15. **EDC Merchant Payment**: Verifies card swipes subtract customer balances and credit merchant accounts.
+16. **Debit Card Fee Deduction**: Tests automated debit card billing cycles.
+17. **ATM Card Fee Deduction**: Validates maintenance billing cycles for ATM-only cards.
+18. **Cashback Calculations**: Ensures customer payments calculate and add cashback bonuses to customer balances.
+19. **Instrument Restrictions**: Prevents ATM cards from being used for payment transactions on EDC machines.
 
 
 
