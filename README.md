@@ -1,3 +1,49 @@
+## Lab Directory Progression (Lab_01 to Lab_05)
+
+### Lab_01: Fundamental Object-Oriented Domain Model
+`Lab_01` establishes the foundational enterprise domain model of the application. It maps real-world entities into clean Python classes, enforcing data encapsulation and entity-relationship boundaries.
+*   **Key Implementations**:
+    *   Design of the `User` class to hold demographic details (Citizen ID, Phone, Birth Date).
+    *   Design of the basic `Account` base class with automated ID generation rules (`get_next_account_id`).
+    *   Implementation of the `Court` class containing sport metadata (Tennis, Football, Table Tennis) alongside hourly pricing schedules and loyalty point incentives.
+    *   Creation of the `System` class acting as the root orchestrator (Aggregator Pattern) to register users, accounts, and courts.
+
+### Lab_02: Business Logic & Scheduling Operations
+`Lab_02` introduces logical operators, temporal checks, and operational scheduling routines to resolve real-world booking conflicts.
+*   **Key Implementations**:
+    *   Creation of the `CourtBooking` entity tracking reservation status, total cost, and booking schedules.
+    *   Conflict resolution algorithms: Implementation of booking validation rules to ensure no court is double-booked for overlapping time ranges (e.g., 10:00-11:00 vs. 11:00-12:00) within a 30-day scheduling horizon.
+    *   Dynamic time range logic using Python `datetime` and `timedelta` libraries to parse, sort, and isolate booked time slots.
+
+### Lab_03: Interactive Web User Interface & Session Management
+`Lab_03` ports the core domain logic into an interactive web interface using FastHTML, providing real-time responsive elements without full-page reloads.
+*   **Key Implementations**:
+    *   Integration of FastHTML components (`Container`, `Div`, `Form`, `Table`, `Select`) to replace terminal output.
+    *   Authentication workflows: Secure login and sign-up mechanics with data validation rules (e.g., verifying phone lengths, preventing duplicate usernames or emails).
+    *   Active session management: Leveraging Starlette sessions to preserve stateful user interactions (`account_id`) across routing contexts.
+    *   Dynamic court schedule visualization tables showcasing available, pending, and reserved slots based on sports categorization.
+
+### Lab_04: Payments, Loyalty Points, and Redemption System
+`Lab_04` introduces financial transactions, promotional code parsing, and point redemptions within customer accounts.
+*   **Key Implementations**:
+    *   **Promotional System**: Implementation of the `Coupon` class with percentage discounts and expiration constraints.
+    *   **Transactional Branching**: Dual payment execution models:
+        1.  *QR Code Payments*: Interactive receipt upload interface using HTMX progress-bar listeners and server-side storage handling.
+        2.  *DMIS Coins*: Virtual currency balance checking and debit logic (`deduct_dmis_coins`).
+    *   **Redemption Store**: Mechanics to redeem system rewards (`Redeem` class) using accumulated member loyalty points, complete with automatic inventory deduction validations.
+    *   **Countdowns**: Asynchronous front-end countdown scripts redirecting users upon payment session expiration (5-minute limits).
+
+### Lab_05: Equipment Rental & Booking Cancellation Lifecycle
+`Lab_05` completes the application cycle by introducing auxiliary equipment rentals linked to active bookings and safe transaction reversal workflows.
+*   **Key Implementations**:
+    *   **Equipment Rental Engine**: Dynamic inventory matching where members can rent specific sports gear (rackets, balls) corresponding exclusively to the sport type of their active reserved slot.
+    *   **Booking Cancellation Lifecycle**:
+        *   Initiation of cancellation requests by customers (`รอยืนยันการยกเลิก`).
+        *   Administrative dashboard interface enabling validation, approval, and decline of cancellations.
+        *   Auto-refund engine: Automatically calculates and processes an 80% monetary refund credited directly back to the member's DMIS Coin balance upon approved cancellation.
+
+
+
 # DMIS Court Booking and Management System
 
 The DMIS Court Booking and Management System is a comprehensive, real-time sports facility reservation and equipment rental platform. Built using clean Object-Oriented Programming (OOP) principles in Python, the system utilizes the FastHTML framework combined with HTMX to deliver a dynamic, single-page-like user experience without heavy client-side Javascript frameworks. 
